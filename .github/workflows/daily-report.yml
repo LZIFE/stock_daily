@@ -1,0 +1,67 @@
+name: daily-stock-report
+
+on:
+  schedule:
+    # UTC 09:30 = 北京时间 17:30，周一至周五（A股收盘后）
+    # 注意：GitHub 定时任务可能有 5~30 分钟延迟
+    - cron: '30 9 * * 1-5'
+  workflow_dispatch: {}   # 支持在 Actions 页面手动触发
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      - name: Run daily report
+        env:
+          AGNES_API_KEY: ${{ secrets.AGNES_API_KEY }}
+          AGNES_BASE_URL: ${{ secrets.AGNES_BASE_URL }}
+          AGNES_MODEL: ${{ secrets.AGNES_MODEL }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+        run: python main.py
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-html
+          path: out/*.html
+          retention-days: 30
+
+      - name: Notify on failure
+        if: failure()
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+        run: |
+          python3 - <<'PY'
+          import os, smtplib, datetime
+          from email.mime.text import MIMEText
+          from email.utils import formataddr
+          now = datetime.datetime.utcnow() + datetime.timedelta(hours=8)
+          body = f"加仓池日报今日失败，请到 Actions 查看日志：\nhttps://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\n时间(北京时间): {now:%Y-%m-%d %H:%M:%S}"
+          msg = MIMEText(body, "plain", "utf-8")
+          msg["Subject"] = f"[失败] A股加仓池日报 {now:%Y-%m-%d}"
+          msg["From"] = formataddr(("加仓池日报机器人", os.environ["SMTP_USER"]))
+          msg["To"] = os.environ["MAIL_TO"]
+          with smtplib.SMTP_SSL(os.environ["SMTP_HOST"], int(os.environ["SMTP_PORT"]), timeout=30) as s:
+              s.login(os.environ["SMTP_USER"], os.environ["SMTP_PASS"])
+              s.sendmail(os.environ["SMTP_USER"], os.environ["MAIL_TO"].split(","), msg.as_string())
+          print("失败通知邮件已发送")
+          PY
