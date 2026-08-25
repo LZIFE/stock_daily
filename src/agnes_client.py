@@ -31,8 +31,9 @@ def agnes_analyze(data_text, timeout=60):
     key = os.environ.get("AGNES_API_KEY", "").strip()
     if not key:
         return None
-    base = os.environ.get("AGNES_BASE_URL", DEFAULT_BASE).rstrip("/")
-    model = os.environ.get("AGNES_MODEL", DEFAULT_MODEL)
+    # 空字符串回退到默认值（GitHub Secret 留空时会传空串而非缺失）
+    base = (os.environ.get("AGNES_BASE_URL") or DEFAULT_BASE).rstrip("/")
+    model = (os.environ.get("AGNES_MODEL") or DEFAULT_MODEL)
     url = f"{base}/chat/completions"
     body = {
         "model": model,
