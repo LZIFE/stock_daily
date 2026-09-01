@@ -2,9 +2,9 @@ name: daily-stock-report
 
 on:
   schedule:
-    # UTC 09:30 = 北京时间 17:30，周一至周五（A股收盘后）
-    # 注意：GitHub 定时任务可能有 5~30 分钟延迟
-    - cron: '30 9 * * 1-5'
+    # UTC 23:30 = 北京时间 次日 07:30（周日~周四 = 北京周一~周五，A股盘前）
+    # 注意：GitHub 定时任务可能有 5~30 分钟延迟，所以 07:30 触发 ≈ 北京时间 08:00 左右实际开始跑
+    - cron: '30 23 * * 0-4'
   workflow_dispatch: {}   # 支持在 Actions 页面手动触发
 
 jobs:

@@ -1,9 +1,9 @@
 # A股加仓池日报自动化
 
-每个交易日收盘后自动：抓取行情 → 重算核心池66只技术位 → 规则分层 → Agnes AI 点评 → 邮件送达。
+每个交易日盘前自动：抓取行情 → 重算核心池66只技术位 → 规则分层 → Agnes AI 点评 → 邮件送达。
 
 ```
-GitHub Actions (cron 工作日 17:30 北京时间)
+GitHub Actions (cron 工作日 07:30 北京时间)
    └─ main.py
         ├─ src/fetcher.py         新浪K线(主) + 东财(备)，算 MA20/MA60/60日位/量比
         ├─ src/agnes_client.py    Agnes AI（OpenAI兼容）生成盘后点评
@@ -49,7 +49,7 @@ python main.py            # 报告输出到 out/report_<日期>.html
    | `AGNES_MODEL` / `AGNES_BASE_URL` | 有默认值，一般不用填 | 选填 |
 
 3. 到 **Actions** 页面手动触发一次 `daily-stock-report`（workflow_dispatch）验证。
-4. 之后每个交易日北京时间约 17:30 自动运行（GitHub cron 可能有十几分钟延迟）。
+4. 之后每个交易日北京时间约 07:30 自动运行（GitHub cron 可能有十几分钟延迟，所以实际开始约 08:00）。
 
 > 注意：`.github/workflows/` 必须位于仓库根目录——本文件夹已是完整仓库结构，直接整体推送即可。
 
