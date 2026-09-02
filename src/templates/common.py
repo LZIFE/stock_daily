@@ -38,15 +38,36 @@ COL_W = ["15%", "8%", "10%", "10%", "13%", "7%", "6%", "31%"]
 
 
 def stock_table(rows, t):
-    """通用个股表。t: 主题字典"""
+    """通用个股表。t: 主题字典
+    若任一行带 _multi_total（多视角评分启用），自动追加「多视角」列（总分+档位徽章+建议仓位%）
+    """
     if not rows:
         return (f"<div style='padding:14px;text-align:center;color:{t['muted']};"
                 f"background:{t.get('empty_bg', '#f9fafb')};{t.get('empty_extra', '')}'>本档今日无标的</div>")
+    show_multi = any(r.get("_multi_total") is not None for r in rows)
+    if show_multi:
+        heads = HEADS + ["多视角"]
+        widths = COL_W + ["10%"]
+        # 把「加仓逻辑」从 31% 缩到 23%，让出 8% 给多视角列
+        widths[7] = "23%"
+    else:
+        heads, widths = HEADS, COL_W
     ths = "".join(
         f"<th style='padding:{t['cell_pad']};font-size:{t['th_fs']};color:{t['th_c']};"
         f"font-weight:{t.get('th_w', 500)};text-align:center;background:{t.get('th_bg', 'transparent')};"
         f"border-bottom:{t.get('th_border', '2px solid #e2e8f0')};{t.get('th_extra', '')}width:{w}'>{h}</th>"
-        for h, w in zip(HEADS, COL_W))
+        for h, w in zip(heads, widths))
+
+    # 档位 → 徽章配色
+    band_style = {
+        "tier_a":    ("#059669", "#ecfdf5", "A档"),
+        "tier_b":    ("#2563eb", "#eff6ff", "B档"),
+        "watch":     ("#d97706", "#fffbeb", "观察"),
+        "danger":    ("#dc2626", "#fef2f2", "追高"),
+        "frozen":    ("#6b7280", "#f3f4f6", "冻结"),
+        "excluded":  ("#6b7280", "#f3f4f6", "排除"),
+    }
+
     trs = []
     for r in rows:
         name = (f"<div style='font-weight:{t.get('name_w', 600)};color:{t['name_c']}'>{esc(r['name'])}</div>"
@@ -59,6 +80,33 @@ def stock_table(rows, t):
         def cell(inner, extra=""):
             return (f"<td style='padding:{t['cell_pad']};text-align:center;color:{t['text_c']};"
                     f"font-variant-numeric:tabular-nums;border-bottom:{t['row_border']};{extra}'>{inner}</td>")
+
+        # 多视角单元格: 总分 + 档位徽章 + 仓位%
+        multi_cell = ""
+        if show_multi:
+            mt = r.get("_multi_total")
+            mb = r.get("_multi_band")
+            if mt is not None and mb:
+                fg, bg, label = band_style.get(mb, ("#6b7280", "#f3f4f6", mb))
+                veto_dot = ""
+                vetoes = r.get("_multi_veto") or []
+                if vetoes:
+                    veto_dot = (f"<div style='color:#dc2626;font-size:10px;margin-top:2px;line-height:1.3'>"
+                                f"⚠ {esc(vetoes[0])}</div>")
+                cap = r.get("_position_cap")
+                cap_line = (f"<div style='color:{t.get('muted', '#94a3b8')};font-size:10px;margin-top:1px'>"
+                            f"仓位≤{cap:.0f}%</div>") if cap is not None else ""
+                multi_cell = (
+                    f"<td style='padding:{t['cell_pad']};text-align:center;border-bottom:{t['row_border']}'>"
+                    f"<div style='font-weight:700;color:{t.get('text_c','#1e293b')};font-size:14px;"
+                    f"font-variant-numeric:tabular-nums'>{mt:.0f}</div>"
+                    f"<span style='display:inline-block;background:{bg};color:{fg};"
+                    f"border-radius:99px;padding:1px 6px;font-size:10px;font-weight:600;margin-top:1px'>"
+                    f"{label}</span>"
+                    f"{cap_line}{veto_dot}</td>")
+            else:
+                multi_cell = (f"<td style='padding:{t['cell_pad']};text-align:center;border-bottom:{t['row_border']};"
+                              f"color:{t.get('muted','#94a3b8')}'>—</td>")
 
         trs.append(
             "<tr>"
@@ -73,6 +121,7 @@ def stock_table(rows, t):
             + f"<td style='padding:{t['cell_pad']} 8px;text-align:left;font-size:{t.get('reason_fs', '12px')};"
               f"color:{t.get('reason_c', '#475569')};line-height:1.5;border-bottom:{t['row_border']};"
               f"{t.get('reason_extra', '')}'>{esc(r.get('_reason') or '—')}</td>"
+            + multi_cell
             + "</tr>")
     return (f"<table width='100%' cellpadding='0' cellspacing='0' "
             f"style='border-collapse:collapse;font-size:{t['fs']}'><thead><tr>{ths}</tr></thead>"

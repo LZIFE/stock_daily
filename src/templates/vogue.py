@@ -28,6 +28,19 @@ def render(ctx):
         f"color:{MUT};margin:3px 0 5px'>PE {r['pe_now']:.1f} · NP +{r['np_yoy']:.0f}% · "
         f"{'NEAR MA20' if abs(r.get('vs_ma20') or 9) <= 2 else 'PULLBACK'} </div>"
         f"<div style='font-family:{SANS};font-size:12.5px;line-height:1.7;color:#40403a'>{C.esc(r.get('_reason') or '')}</div>"
+        # 多视角评分行: 总分 + 档位徽章 + 仓位上限 + 否决原因
+        + (
+            f"<div style='font-family:{SANS};font-size:11px;margin-top:6px;line-height:1.6'>"
+            f"<span style='color:{MUT};letter-spacing:1.5px;text-transform:uppercase'>多视角</span> "
+            f"<b style='font-family:{SERIF};font-size:18px;color:{INK}'>{r['_multi_total']:.0f}</b>"
+            f"&nbsp;<span style='background:{('#059669' if r['_multi_band']=='tier_a' else ('#2563eb' if r['_multi_band']=='tier_b' else ('#dc2626' if r['_multi_band'] in ('danger','excluded') else '#d97706')))};"
+            f"color:#fff;border-radius:99px;padding:1px 7px;font-size:10px;font-weight:600;letter-spacing:1px'>"
+            f"{ {'tier_a':'A','tier_b':'B','watch':'观察','danger':'追高','frozen':'冻结','excluded':'排除'}.get(r['_multi_band'], r['_multi_band']) }</span>"
+            f"&nbsp;<span style='color:{MUT}'>仓位≤{r.get('_position_cap',0):.0f}%</span>"
+            + (f"<div style='color:#8f1d1d;font-size:10.5px;margin-top:2px'>⚠ {C.esc(r['_multi_veto'][0])}</div>" if r.get('_multi_veto') else "")
+            + "</div>"
+          ) if r.get("_multi_total") is not None else ""
+        +
         f"</td>"
         f"<td align='right' valign='top'><span style='font-family:{SANS};font-size:13px;font-weight:700;color:"
         f"{'#8f1d1d' if r['chg_today'] > 0 else '#1a5632'}'>{r['chg_today']:+.2f}%</span></td>"

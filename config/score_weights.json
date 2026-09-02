@@ -1,0 +1,52 @@
+{
+  "_comment": "多视角评分权重 (v-buy-final) | 量价 50% + 价值 30% + 心理纪律 20% | 阈值: 75/60",
+  "version": "v-buy-final",
+  "tier_thresholds": { "tier_a": 75, "watch": 60 },
+  "signal_groups": {
+    "price_volume": {
+      "weight_total": 50,
+      "perspectives": {
+        "wyckoff": 14,
+        "edwards_magee": 12,
+        "head_first": 11,
+        "chanlun": 13
+      }
+    },
+    "value": {
+      "weight_total": 30,
+      "perspectives": {
+        "damodaran": 10,
+        "graham": 8,
+        "tangchao": 7,
+        "fisher": 5
+      }
+    },
+    "behavior_discipline": {
+      "weight_total": 20,
+      "perspectives": {
+        "howard_marks": 6,
+        "livermore": 6,
+        "kahneman": 4,
+        "munger": 4
+      }
+    }
+  },
+  "veto_rules": {
+    "audit_nonstandard": { "source": "tangchao", "action": "exclude" },
+    "loss_consecutive_3y": { "source": "tangchao", "action": "exclude" },
+    "pe_over_industry_3x": { "source": "graham", "action": "demote" },
+    "market_heat_extreme": { "source": "howard_marks", "action": "demote" },
+    "hwm_drawdown_over_20pct": { "source": "head_first", "action": "freeze_buys" }
+  },
+  "position_layer": {
+    "_comment": "市场状态 → 单股最大仓位比例",
+    "market_state_attack": 100,
+    "market_state_normal": 70,
+    "market_state_protect": 50,
+    "market_state_defend": 30,
+    "hwm_under_5pct": 1.0,
+    "hwm_5_to_10pct": 0.9,
+    "hwm_10_to_20pct": 0.7,
+    "hwm_over_20pct": 0.0
+  }
+}

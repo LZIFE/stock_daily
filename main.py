@@ -16,6 +16,11 @@ from fetcher import fetch_indices, fetch_pool, load_pool, classify  # noqa: E402
 from agnes_client import agnes_analyze   # noqa: E402
 from report_builder import build_html, email_subject  # noqa: E402
 from mailer import missing_config, send_html         # noqa: E402
+try:
+    from score_engine import evaluate_pool as _multi_eval  # noqa: E402
+    MULTI_OK = True
+except Exception:
+    MULTI_OK = False
 
 CST = timezone(timedelta(hours=8))
 OUT_DIR = os.path.join(os.path.dirname(__file__), "out")
@@ -37,6 +42,26 @@ def main():
     tiers = classify(pool, bench)
     print(f"[2/4] 分层: 第一档{len(tiers['tier_a'])} 第二档{len(tiers['tier_b'])} "
           f"追高{len(tiers['danger'])} 观察{len(tiers['watch'])}")
+
+    # 多视角评分 (开关: MULTI_PERSPECTIVE=true)
+    if os.environ.get("MULTI_PERSPECTIVE", "true").lower() == "true" and MULTI_OK:
+        ctx = {"bench_chg_today": bench, "hwm_drawdown_pct": float(os.environ.get("HWM_DRAWDOWN", 0))}
+        multi = _multi_eval(pool, ctx)
+        # 把多视角总分合并回每只股票
+        multi_map = {m["code"]: m for m in multi}
+        for k in ("tier_a", "tier_b", "danger", "watch"):
+            for r in tiers[k]:
+                m = multi_map.get(r.get("code"))
+                if m:
+                    r["_multi_total"] = m["total"]
+                    r["_multi_band"] = m["band"]
+                    r["_multi_veto"] = m["veto"]
+                    r["_position_cap"] = m["position_cap_pct"]
+        top3 = sorted([m for m in multi if m["band"] == "tier_a"], key=lambda x: -x["total"])[:3]
+        print(f"      多视角评分完成, tier_a 共 {sum(1 for m in multi if m['band']=='tier_a')} 只")
+        if top3:
+            top3_str = ", ".join("{0}({1:.0f})".format(m["name"], m["total"]) for m in top3)
+            print("      Top3: " + top3_str)
 
     print("[3/4] AI 点评...")
     payload = json.dumps({
