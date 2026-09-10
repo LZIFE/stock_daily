@@ -3,7 +3,7 @@
 """③ 极简杂志风：白底衬线、细分隔线、大留白，单一墨色点缀"""
 from . import common as C
 
-SERIF = "Georgia,'Times New Roman','Songti SC','STSong',serif"
+SERIF = "Georgia,Times New Roman,Songti SC,STSong,serif"
 INK, MUTED, HAIR = "#111111", "#8a8a8a", "#e4e4e4"
 UP, DOWN = "#9f1d1d", "#1a6840"
 

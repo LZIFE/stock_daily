@@ -3,7 +3,7 @@
 """⑤ 红金研报风：券商研报质感，绛红头部+鎏金点缀，正式稳重"""
 from . import common as C
 
-SERIF = "Georgia,'Songti SC','STSong','SimSun',serif"
+SERIF = "Georgia,Songti SC,STSong,SimSun,serif"
 RED, GOLD, INK, MUTED = "#8e1616", "#c9a227", "#292524", "#8b7d6f"
 
 T = {"fs": "13px", "cell_pad": "7px 6px", "th_fs": "12px",
@@ -56,7 +56,7 @@ def render(ctx):
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table width="680" cellpadding="0" cellspacing="0" style="max-width:680px;width:100%;background:#fffdf8;border:1px solid #e7dbc4">
 
-<tr><td style="background:linear-gradient(135deg,{RED} 0%,#b91c1c 100%);border-bottom:3px solid {GOLD};padding:24px 28px">
+<tr><td style="background:#a51d1d;background:linear-gradient(135deg,{RED} 0%,#b91c1c 100%);border-bottom:3px solid {GOLD};padding:24px 28px">
   <table width="100%" cellpadding="0" cellspacing="0"><tr>
     <td>
       <div style="color:#ffd98a;font-size:11px;letter-spacing:4px">EQUITY RESEARCH DAILY</div>

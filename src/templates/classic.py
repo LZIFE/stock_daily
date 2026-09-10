@@ -61,7 +61,7 @@ def render(ctx):
 <div style="padding:20px 8px;font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif">
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table width="680" cellpadding="0" cellspacing="0" style="max-width:680px;width:100%">
-<tr><td style="background:linear-gradient(135deg,#141b2e 0%,#1e2b4d 55%,#27406e 100%);border-radius:16px 16px 0 0;padding:26px 28px 20px">
+<tr><td style="background:#1e2b4d;background:linear-gradient(135deg,#141b2e 0%,#1e2b4d 55%,#27406e 100%);border-radius:16px 16px 0 0;padding:26px 28px 20px">
   <table width="100%" cellpadding="0" cellspacing="0"><tr>
     <td>
       <div style="color:#8fa3cf;font-size:12px;letter-spacing:3px">DAILY BRIEF · 多书视角选股系统</div>
@@ -81,7 +81,7 @@ def render(ctx):
   {_tier_card('tier_a', tiers.get('tier_a', []))}
   {_tier_card('tier_b', tiers.get('tier_b', []))}
   {_tier_card('danger', tiers.get('danger', []))}
-  <div style="background:linear-gradient(135deg,#f5f7ff,#fdf7ee);border:1px solid #e3e8f5;border-radius:12px;padding:16px 18px;margin:16px 0 8px">
+  <div style="background:#f7f8fd;background:linear-gradient(135deg,#f5f7ff,#fdf7ee);border:1px solid #e3e8f5;border-radius:12px;padding:16px 18px;margin:16px 0 8px">
     <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:8px">🤖 AI 盘后点评 <span style="font-size:11px;color:#94a3b8;font-weight:400">by Agnes</span></div>
     {ai}
   </div>

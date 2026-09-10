@@ -5,7 +5,7 @@ from . import common as C
 
 BG, CARD, LINE, INK, MUT = "#ffffff", "#f6f8fa", "#d0d7de", "#1f2328", "#57606a"
 BLUE, GREEN, RED = "#0969da", "#1a7f37", "#cf222e"
-MONO = "ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace"
+MONO = "ui-monospace,SFMono-Regular,Menlo,Consolas,Courier New,monospace"
 
 T_CODE = {"fs": "12.5px", "cell_pad": "5px 6px", "th_fs": "11px",
           "name_c": BLUE, "text_c": "#24292f", "muted": MUT,

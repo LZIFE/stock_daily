@@ -9,7 +9,7 @@ TIERS = {
     "danger": ("✕", "OVERHEAT / 追高风险", "EXTENDED POSITION, 不建议现价加仓", "#ef4444", "#170b0b"),
 }
 
-MONO = "ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace"
+MONO = "ui-monospace,SFMono-Regular,Menlo,Consolas,Courier New,monospace"
 UP, DOWN, FLAT = "#ff5c5c", "#35d07f", "#4b5f4b"
 GREEN, DIM, LINE = "#22c55e", "#6f8f6f", "#1d2b1d"
 

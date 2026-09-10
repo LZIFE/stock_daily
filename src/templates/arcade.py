@@ -6,7 +6,7 @@ from . import common as C
 BG, INK = "#1a1c2c", "#f4f4f4"
 RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, MUT = ("#ff004d", "#ffa300", "#ffec27",
                                                  "#00e436", "#29adff", "#7b25c8", "#5d648b")
-MONO = "ui-monospace,Menlo,Consolas,'Courier New',monospace"
+MONO = "ui-monospace,Menlo,Consolas,Courier New,monospace"
 
 
 def _hp_bar(pos, color):

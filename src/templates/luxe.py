@@ -4,7 +4,7 @@
 from . import common as C
 
 BG, GOLD, CHAMP, INK, MUT = "#0b0a08", "#c9a962", "#e8d9b0", "#f4efe4", "#8d8574"
-SERIF = "Georgia,'Songti SC','STSong',serif"
+SERIF = "Georgia,Songti SC,STSong,serif"
 
 
 def render(ctx):

@@ -31,7 +31,7 @@ def render(ctx):
 
     return f"""<!DOCTYPE html><html><head><meta charset="utf-8"></head>
 <body style="margin:0;background:{MUTED}">
-<div style="padding:26px 10px;font-family:Georgia,'Songti SC','STSong',serif">
+<div style="padding:26px 10px;font-family:Georgia,Songti SC,STSong,serif">
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:{PAPER};
        border-radius:4px;box-shadow:0 8px 30px #00000030">

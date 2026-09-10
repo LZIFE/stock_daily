@@ -5,7 +5,7 @@ from . import common as C
 
 BG, CARD, INK, MUT, LINE = "#f7f7f4", "#ffffff", "#191919", "#737373", "#e3e3de"
 BLUE, RED, GREEN = "#2f6fed", "#e0442c", "#1a9a6c"
-SANS = "'Helvetica Neue',Arial,'PingFang SC',sans-serif"
+SANS = "Helvetica Neue,Arial,PingFang SC,sans-serif"
 
 
 def _big_num(value, label, color=INK):
@@ -34,7 +34,8 @@ def _rank_bar(r, max_score):
             f"<td width='90'><b style='font-size:13.5px;color:{INK}'>{C.esc(r['name'])}</b><br>"
             f"<span style='font-size:10.5px;color:{MUT}'>{r['code']}</span></td>"
             f"<td><div style='background:{LINE};height:14px;border-radius:2px;margin:0 10px'>"
-            f"<div style='width:{pct}%;height:14px;background:linear-gradient(90deg,{BLUE},#7aa5f5);border-radius:2px'></div></div></td>"
+            f"<div style='width:{pct}%;height:14px;background:{BLUE};"
+            f"background:linear-gradient(90deg,{BLUE},#7aa5f5);border-radius:2px'></div></div></td>"
             f"<td width='34' align='right'><b style='font-size:14px;color:{BLUE};"
             f"font-variant-numeric:tabular-nums'>{r['score']}</b></td></tr></table>"
             f"<div style='font-size:11.5px;color:{MUT};line-height:1.6;margin-top:3px'>{C.esc(r.get('_reason') or '')}</div>"

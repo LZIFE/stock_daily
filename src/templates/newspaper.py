@@ -3,7 +3,7 @@
 """④ 报纸风：米色纸面、衬线密排、双线框，老牌财经报质感"""
 from . import common as C
 
-SERIF = "Georgia,'Times New Roman','Songti SC','SimSun',serif"
+SERIF = "Georgia,Times New Roman,Songti SC,SimSun,serif"
 PAPER, INK, RULE, MUTED = "#fbf7ee", "#1c1917", "#d8cdb4", "#78716c"
 UP, DOWN = "#a51c1c", "#1a6840"
 
