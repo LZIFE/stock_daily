@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""⑭ 时尚大片：Vogue杂志风，超大衬线标题、黑白灰+一点红、编辑感排版
+"""⑭ 时尚大片：THE POOL —— 高级编辑感排版
 
+设计基调：纸白底、墨黑衬线大字、发丝线分隔、一点绛红。
 邮件客户端兼容要点（不要改坏）：
 - HTML 属性一律用双引号；字体栈内不得出现引号（否则 style 属性被截断）。
-- background 渐变只作增强，前置纯色回退（Gmail/Outlook 忽略渐变）。
-- <td> 上的 margin 无效，间隔用 padding 或空行实现。
+- 不用 linear-gradient / td margin / float 等邮件客户端不可靠的样式。
 """
 from . import common as C
 
-INK, PAPER, MUT, RED = "#0a0a0a", "#f5f4f0", "#9a968c", "#c1121f"
+INK, PAPER, MUT = "#141414", "#faf9f6", "#8a857a"
+RED, UP, DOWN = "#b3122e", "#b3122e", "#1e6b45"
+HAIR = "#e3e0d8"
 SERIF = "Didot,Bodoni MT,Songti SC,STSong,Georgia,serif"
 SANS = "Helvetica,Arial,PingFang SC,Microsoft YaHei,sans-serif"
-BAND = {"tier_a": "#059669", "tier_b": "#2563eb", "watch": "#d97706",
-        "danger": "#dc2626", "frozen": "#6b7280", "excluded": "#6b7280"}
-BAND_LABEL = {"tier_a": "A", "tier_b": "B", "watch": "观察", "danger": "追高",
+BAND = {"tier_a": "#1e6b45", "tier_b": "#2f5a8f", "watch": "#a06a1b",
+        "danger": "#8f1d1d", "frozen": "#6b7280", "excluded": "#6b7280"}
+BAND_LABEL = {"tier_a": "A 档", "tier_b": "B 档", "watch": "观察", "danger": "追高",
               "frozen": "冻结", "excluded": "排除"}
 
 
@@ -23,95 +25,132 @@ def render(ctx):
     idx, tiers, st = ctx["indices"], ctx["tiers"], ctx["stats"]
     ta = sorted(tiers.get("tier_a", []), key=lambda x: -x.get("score", 0))
     tb, dg = tiers.get("tier_b", []), tiers.get("danger", [])
-    ai_body = C.ai_block(ctx["ai_text"], {"ai_c": "#efece4", "muted": "#8a867c"},
+    ai_body = C.ai_block(ctx["ai_text"], {"ai_c": "#e9e5da", "muted": "#8f897c"},
                          "The AI edit is not in this issue yet — AGNES_API_KEY required.")
 
-    lineup = "".join(
-        f'<tr><td style="padding:14px 0;border-bottom:1px solid #d8d5cd">'
-        f'<table width="100%" cellpadding="0" cellspacing="0"><tr>'
-        f'<td width="64" valign="top"><span style="font-family:{SERIF};font-size:30px;color:#cfcbc0;'
-        f'font-weight:700">{i + 1:02d}</span></td>'
-        f'<td valign="top">'
-        f'<div style="font-family:{SERIF};font-size:21px;letter-spacing:2px;color:{INK}">{C.esc(r["name"])}'
-        f'&nbsp;<span style="font-size:11px;color:{MUT};letter-spacing:1px">{r["code"]}</span></div>'
-        f'<div style="font-family:{SANS};font-size:11px;letter-spacing:2px;text-transform:uppercase;'
-        f'color:{MUT};margin:3px 0 5px">PE {r["pe_now"]:.1f} · NP +{r["np_yoy"]:.0f}% · '
-        f'{"NEAR MA20" if abs(r.get("vs_ma20") or 9) <= 2 else "PULLBACK"} </div>'
-        f'<div style="font-family:{SANS};font-size:12.5px;line-height:1.7;color:#40403a">{C.esc(r.get("_reason") or "")}</div>'
-        # 多视角评分行: 总分 + 档位徽章 + 仓位上限 + 否决原因
-        + (
-            f'<div style="font-family:{SANS};font-size:11px;margin-top:6px;line-height:1.6">'
-            f'<span style="color:{MUT};letter-spacing:1.5px;text-transform:uppercase">多视角</span> '
-            f'<b style="font-family:{SERIF};font-size:18px;color:{INK}">{r["_multi_total"]:.0f}</b>'
-            f'&nbsp;<span style="background:{BAND.get(r["_multi_band"], "#6b7280")};'
-            f'color:#fff;border-radius:99px;padding:1px 7px;font-size:10px;font-weight:600;letter-spacing:1px">'
-            f'{BAND_LABEL.get(r["_multi_band"], r["_multi_band"]) }</span>'
-            f'&nbsp;<span style="color:{MUT}">仓位≤{r.get("_position_cap", 0):.0f}%</span>'
-            + (f'<div style="color:#8f1d1d;font-size:10.5px;margin-top:2px">⚠ {C.esc(r["_multi_veto"][0])}</div>'
-               if r.get("_multi_veto") else "")
-            + "</div>"
-        ) if r.get("_multi_total") is not None else ""
-        +
-        f'</td>'
-        f'<td align="right" valign="top"><span style="font-family:{SANS};font-size:13px;font-weight:700;color:'
-        f'{"#8f1d1d" if r["chg_today"] > 0 else "#1a5632"}">{r["chg_today"]:+.2f}%</span></td>'
-        f'</tr></table></td></tr>'
-        for i, r in enumerate(ta))
+    # ---------- 指数条 ----------
+    n = len(idx) or 1
+    idx_cells = ""
+    for i, d in enumerate(idx):
+        c = UP if d["chg_today"] > 0 else (DOWN if d["chg_today"] < 0 else MUT)
+        border = "" if i == 0 else f"border-left:1px solid {HAIR};"
+        idx_cells += (f'<td width="{100 // n}%" align="center" style="padding:14px 2px;{border}">'
+                      f'<div style="font-family:{SANS};font-size:10.5px;letter-spacing:2px;color:{MUT}">'
+                      f'{C.esc(d["name"])}</div>'
+                      f'<div style="font-family:{SERIF};font-size:19px;color:{INK};margin:4px 0">'
+                      f'{d["close"]:,.2f}</div>'
+                      f'<div style="font-family:{SANS};font-size:11.5px;font-weight:600;color:{c}">'
+                      f'{d["chg_today"]:+.2f}%</div></td>')
 
-    idx_line = "&nbsp;&nbsp;&nbsp;&nbsp;".join(
-        f'<span style="color:{MUT}">{C.esc(d["name"])}</span> '
-        f'<b style="color:{"#8f1d1d" if d["chg_today"] > 0 else "#1a5632"}">{d["close"]:,.2f} ({d["chg_today"]:+.2f}%)</b>'
-        for d in idx)
+    # ---------- 个股阵容 ----------
+    rows = []
+    for i, r in enumerate(ta):
+        name, code = C.esc(r["name"]), r["code"]
+        reason = C.esc(r.get("_reason") or "")
+        chg = r["chg_today"]
+        chg_c = UP if chg > 0 else (DOWN if chg < 0 else MUT)
+        zone = "NEAR MA20" if abs(r.get("vs_ma20") or 9) <= 2 else "PULLBACK"
+        metrics = "PE {0:.1f} · NP +{1:.0f}% · {2}".format(r["pe_now"], r["np_yoy"], zone)
+
+        multi = ""
+        if r.get("_multi_total") is not None:
+            band = r["_multi_band"]
+            bcolor = BAND.get(band, "#6b7280")
+            blabel = BAND_LABEL.get(band, band)
+            cap = r.get("_position_cap", 0)
+            multi = (f'<div style="margin-top:8px;padding-top:7px;border-top:1px dotted {HAIR};'
+                     f'font-family:{SANS};font-size:11px;color:{MUT};letter-spacing:1px">'
+                     f'多视角 <b style="font-family:{SERIF};font-size:16px;color:{INK};'
+                     f'letter-spacing:0">{r["_multi_total"]:.0f}</b>'
+                     f'&nbsp;·&nbsp;<span style="color:{bcolor};font-weight:700">{blabel}</span>'
+                     f'&nbsp;·&nbsp;建议仓位≤{cap:.0f}%</div>')
+            if r.get("_multi_veto"):
+                multi += (f'<div style="font-family:{SANS};font-size:10.5px;color:#8f1d1d;'
+                          f'margin-top:3px">⚠ {C.esc(r["_multi_veto"][0])}</div>')
+
+        rows.append(f'<tr><td style="padding:16px 0;border-bottom:1px solid {HAIR}">'
+                    f'<table width="100%" cellpadding="0" cellspacing="0"><tr>'
+                    f'<td width="52" valign="top"><span style="font-family:{SERIF};font-size:25px;'
+                    f'color:#cdc8bb;font-weight:700">{i + 1:02d}</span></td>'
+                    f'<td valign="top">'
+                    f'<table width="100%" cellpadding="0" cellspacing="0"><tr>'
+                    f'<td><span style="font-family:{SERIF};font-size:20px;color:{INK}">{name}</span>'
+                    f'<span style="font-family:{SANS};font-size:11px;color:{MUT};'
+                    f'letter-spacing:1px;margin-left:6px">{code}</span></td>'
+                    f'<td align="right"><span style="font-family:{SANS};font-size:14px;'
+                    f'font-weight:700;color:{chg_c}">{chg:+.2f}%</span></td>'
+                    f'</tr></table>'
+                    f'<div style="font-family:{SANS};font-size:11px;letter-spacing:1.5px;'
+                    f'color:{MUT};margin-top:4px">{metrics}</div>'
+                    f'<div style="font-family:{SANS};font-size:12.5px;line-height:1.7;'
+                    f'color:#45423c;margin-top:5px">{reason}</div>'
+                    f'{multi}'
+                    f'</td></tr></table></td></tr>')
+    empty_row = ('<tr><td style="padding:24px 0;text-align:center;font-family:'
+                 + SANS + ';font-size:13px;color:' + MUT + '">本期无入选阵容</td></tr>')
+    lineup = "".join(rows) or empty_row
+
+    tb_names = "、".join(C.esc(r["name"]) for r in tb[:12]) or "—"
+    dg_names = "、".join(C.esc(r["name"]) for r in dg[:8]) or "—"
 
     return f'''<!DOCTYPE html><html><head><meta charset="utf-8"></head>
 <body style="margin:0;background:{PAPER}">
-<div style="padding:26px 10px;font-family:{SANS}">
+<div style="padding:30px 10px;font-family:{SANS}">
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table width="620" cellpadding="0" cellspacing="0" style="max-width:620px;width:100%">
 
-<tr><td style="text-align:center;padding:10px 0 4px">
-  <div style="font-family:{SERIF};font-size:52px;font-weight:700;letter-spacing:14px;color:{INK}">THE&nbsp;POOL</div>
-  <div style="border-top:1px solid {INK};border-bottom:1px solid {INK};padding:5px 0;margin-top:6px">
-    <span style="font-size:10.5px;letter-spacing:4px;color:{MUT}">VOL.{ctx["data_date"].replace("-", ".")}
-    &nbsp;·&nbsp; DAILY EDITION &nbsp;·&nbsp; 多书视角特辑</span>
-  </div>
+<tr><td style="padding:0 0 10px">
+  <table width="100%" cellpadding="0" cellspacing="0"><tr>
+    <td style="font-family:{SANS};font-size:10px;letter-spacing:3px;color:{MUT}">
+      VOL.{ctx["data_date"].replace("-", ".")}</td>
+    <td align="right" style="font-family:{SANS};font-size:10px;letter-spacing:3px;color:{MUT}">
+      DAILY EDITION · 多书视角特辑</td>
+  </tr></table>
 </td></tr>
 
-<tr><td style="text-align:center;padding:16px 0 6px">
-  <div style="font-family:{SERIF};font-size:27px;line-height:1.35;color:{INK}">
+<tr><td style="border-top:1px solid {INK};border-bottom:3px double {INK};text-align:center;padding:18px 0 16px">
+  <div style="font-family:{SERIF};font-size:46px;font-weight:700;letter-spacing:12px;color:{INK}">THE&nbsp;POOL</div>
+  <div style="font-family:{SERIF};font-size:14px;letter-spacing:2px;color:{MUT};margin-top:8px">
     本季，<span style="color:{RED}">回踩</span>是最好的入场券。</div>
-  <div style="font-size:11px;letter-spacing:2px;color:{MUT};margin-top:8px">{idx_line}</div>
 </td></tr>
 
-<tr><td style="padding:10px 0">
-  <table width="100%" cellpadding="0" cellspacing="0">
-  <tr><td style="background:#cfccc2;background:linear-gradient(120deg,#e7e4dc,#cfccc2 60%,#e7e4dc);
-        height:110px;text-align:center;vertical-align:middle">
-    <div style="font-family:{SERIF};color:#55524a;letter-spacing:6px;font-size:15px">— 今日阵容 —</div>
-    <div style="font-family:{SANS};font-size:11px;color:#6e6a60;letter-spacing:2px;padding-top:4px">
-     {len(ta)} SELECTED · {st["up"]} UP / {st["down"]} DOWN · AVG {st["avg"]:+.2f}%</div>
-  </td></tr>
-  </table>
+<tr><td style="border-left:1px solid {HAIR};border-right:1px solid {HAIR};border-bottom:1px solid {HAIR}">
+  <table width="100%" cellpadding="0" cellspacing="0"><tr>{idx_cells}</tr></table>
 </td></tr>
 
-<tr><td style="padding:6px 0 0">
-  <table width="100%" cellpadding="0" cellspacing="0">{lineup or '<tr><td><i>本期无入选阵容</i></td></tr>'}</table>
+<tr><td style="padding:26px 0 6px">
+  <table width="100%" cellpadding="0" cellspacing="0"><tr>
+    <td style="font-family:{SERIF};font-size:16px;letter-spacing:3px;color:{INK}">今日阵容</td>
+    <td align="right" style="font-family:{SANS};font-size:10.5px;letter-spacing:2px;color:{MUT}">
+      {len(ta)} SELECTED · {st["up"]} UP / {st["down"]} DOWN · AVG {st["avg"]:+.2f}%</td>
+  </tr></table>
 </td></tr>
 
-<tr><td style="padding:18px 0 4px">
-  <div style="font-family:{SERIF};font-size:15px;letter-spacing:3px;color:{INK};margin-bottom:6px">BACKSTAGE · 后台名单</div>
-  <p style="font-size:12.5px;line-height:2;color:#55524a;margin:0">
-   <span style="color:{MUT}">候场中（{len(tb)}）：</span>{"、".join(C.esc(r["name"]) for r in tb[:12]) or "—"}　
-   <span style="color:{MUT}">｜本季谢幕，请勿追光（{len(dg)}）：</span>{(C.esc(dg[0]["name"]) if dg else "—")} 等</p>
+<tr><td style="border-top:1px solid {INK};padding:4px 0 0">
+  <table width="100%" cellpadding="0" cellspacing="0">{lineup}</table>
 </td></tr>
 
-<tr><td style="padding:12px 0"></td></tr>
-
-<tr><td style="background:{INK};padding:16px 20px">
-  <div style="color:#d9d6cd;font-size:11px;letter-spacing:3px;margin-bottom:6px">THE AI EDIT — BY AGNES</div>
-  <div style="color:#efece4;font-size:13px;line-height:1.9">{ai_body}</div>
+<tr><td style="padding:26px 0 8px">
+  <table width="100%" cellpadding="0" cellspacing="0"><tr>
+    <td width="50%" valign="top" style="padding-right:14px;border-right:1px solid {HAIR}">
+      <div style="font-family:{SERIF};font-size:14px;letter-spacing:3px;color:{INK};padding-bottom:6px">候场中 · {len(tb)}</div>
+      <div style="font-family:{SANS};font-size:12px;line-height:2;color:#55524a">{tb_names}</div>
+    </td>
+    <td width="50%" valign="top" style="padding-left:14px">
+      <div style="font-family:{SERIF};font-size:14px;letter-spacing:3px;color:{INK};padding-bottom:6px">谢幕名单 · {len(dg)}</div>
+      <div style="font-family:{SANS};font-size:12px;line-height:2;color:#55524a">{dg_names}</div>
+    </td>
+  </tr></table>
 </td></tr>
 
-<tr><td style="text-align:center;padding:14px 30px;color:#a8a49a;font-size:10px;line-height:1.8;
-      letter-spacing:1px">{C.DISCLAIMER}</td></tr>
+<tr><td style="padding:14px 0"></td></tr>
+
+<tr><td style="background:{INK};padding:20px 24px">
+  <div style="font-family:{SANS};font-size:10px;letter-spacing:3px;color:#a39d8f;padding-bottom:8px">
+    THE AI EDIT — BY AGNES</div>
+  <div style="font-family:{SANS};color:#e9e5da;font-size:13px;line-height:1.9">{ai_body}</div>
+</td></tr>
+
+<tr><td style="padding:16px 0 2px;border-top:1px solid {HAIR};text-align:center;
+      color:#a8a49a;font-family:{SANS};font-size:10px;line-height:1.8;letter-spacing:1px">{C.DISCLAIMER}</td></tr>
 </table></td></tr></table></div></body></html>'''
