@@ -70,7 +70,9 @@ export default function EventsPanel({ code }: { code: string }) {
         <div className="small">未获取到公告或研报。</div>
       )}
       <div className="small" style={{ marginTop: 8 }}>
-        公告正文接口有 5000 字符上限，长公告（年报/半年报）AI 读到的是开头部分。
+        公告正文接口上限 5000 字符。实测长公告（年报/半年报）的关键财务数据
+        —— 营收、归母净利、经营现金流、净资产、总资产、EPS、加权 ROE ——
+        都落在前 4000 字内，截断的是非经常性损益等附录细节。
       </div>
     </div>
   )

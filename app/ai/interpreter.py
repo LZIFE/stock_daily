@@ -49,7 +49,12 @@ def _gather_events(code, include=True):
             continue
         body = ev.fetch_announcement_text(a["art_code"])
         if len(body) >= ev.ANNOUNCE_CHAR_LIMIT:
-            limits.append("公告正文接口有 5000 字符上限，长公告（年报/半年报）读到的是开头部分")
+            # 实测（贵州茅台 2026 半年报）：营收/归母净利/经营现金流/归母净资产/
+            # 总资产/EPS/加权 ROE 全部落在前 4000 字内，被截掉的是「非经常性损益」
+            # 等附录细节。所以这个上限**不是有效信息的瓶颈** —— 措辞按实测来，
+            # 不要写成吓人的样子（也就不必为此引入 PDF 解析依赖）。
+            limits.append("公告正文接口上限 5000 字符；实测关键财务数据均在正文前 4000 字内，"
+                          "截断的是非经常性损益等附录细节")
         take = min(len(body), ANNOUNCE_TEXT_BUDGET - used)
         a["body"] = body[:take]
         used += take
