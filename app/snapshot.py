@@ -66,8 +66,54 @@ def load(dir_path=None, force=False):
     index = [(r["code"], r.get("name", "")) for r in records.values()]
 
     _CACHE.update({"dir": dir_path, "records": records, "meta": meta,
-                   "badrate": badrate, "index": index})
+                   "badrate": badrate, "index": index,
+                   "cluster_stats": _cluster_stats(records),
+                   "history": None})
     return records, meta, badrate
+
+
+def _cluster_stats(records):
+    """各语义簇的全市场基准（中位/四分位）。
+
+    在服务端启动时从快照现算，**不写进快照文件** —— 这样加这个功能
+    不需要重建快照（重建一次 2.5 分钟）。4898 × 29 只算一次，很便宜。
+    """
+    from . import book_rules
+    out = {}
+    for c, books in book_rules.cluster_members().items():
+        vals = []
+        for r in records.values():
+            s = [r["books"].get(b) for b in books]
+            s = [x for x in s if x is not None]
+            if s:
+                vals.append(sum(s) / len(s))
+        if not vals:
+            continue
+        vals.sort()
+        n = len(vals)
+        out[c] = {
+            "cluster": c, "label": book_rules.cluster_label(c),
+            "n_books": len(books), "books": books,
+            "median": round(vals[n // 2], 1),
+            "p25": round(vals[int(0.25 * n)], 1),
+            "p75": round(vals[int(0.75 * n)], 1),
+            "n_stocks": n,
+        }
+    return out
+
+
+def cluster_stats():
+    if _CACHE.get("cluster_stats") is None:
+        load()
+    return _CACHE.get("cluster_stats") or {}
+
+
+def history():
+    """历史轨迹（来自 bt_robust_data.pkl，构建期写入快照目录）。"""
+    if _CACHE.get("history") is None and _CACHE.get("dir"):
+        from . import history as H
+        _CACHE["history"] = H.load(_CACHE["dir"]) or {}
+    return _CACHE.get("history") or {}
 
 
 def get():

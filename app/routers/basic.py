@@ -52,10 +52,12 @@ def snapshot_meta():
                          auc=o.get("auc", 0.0),
                          quintiles=o.get("quintiles", []),
                          quintile_edges=o.get("quintile_edges", []))
+    ths = list((bt.get("thresholds") or {}).values()) if bt else []
     return SnapshotMetaOut(**{k: meta.get(k) for k in
                               ("asof", "built_at", "universe_size", "n_scored",
                                "band_distribution", "coverage", "core_score", "core_books")},
-                           evidence=ev, disclaimers=disclaimers.BASE)
+                           evidence=ev, thresholds=ths,
+                           disclaimers=disclaimers.BASE)
 
 
 @router.get("/stocks/search", response_model=StockSearchOut)

@@ -43,6 +43,8 @@ class SnapshotMetaOut(BaseModel):
     core_score: Dict[str, Any] = Field(default_factory=dict)
     core_books: List[str] = Field(default_factory=lambda: list(book_rules.CORE_BOOKS))
     evidence: Optional[EvidenceOut] = None
+    # 多阈值坏率（跌超 10/20/30%）—— 用 Dict 而非 ThresholdOut，避免模型定义顺序问题
+    thresholds: List[Dict[str, Any]] = Field(default_factory=list)
     disclaimers: List[str] = Field(default_factory=list)
 
 
@@ -67,6 +69,47 @@ class BookScoreOut(BaseModel):
     core: bool = False
     cluster: str = ""
     rule: str = ""
+
+
+class HistoryPoint(BaseModel):
+    date: str
+    core_score: float
+    pctl: float
+    source: str = "panel"          # panel = 回测面板某期；snapshot = 当前快照点
+
+
+class HistoryOut(BaseModel):
+    points: List[HistoryPoint] = Field(default_factory=list)
+    n: int = 0
+    min: Optional[float] = None
+    max: Optional[float] = None
+    delta: Optional[float] = None      # 末点 − 首点
+    pctl_now: Optional[float] = None
+    pctl_median: Optional[float] = None
+
+
+class ClusterScoreOut(BaseModel):
+    cluster: str
+    label: str
+    desc: str = ""
+    score: Optional[float] = None      # 该股在此簇的均分
+    universe_median: Optional[float] = None
+    diff: Optional[float] = None       # 相对全市场中位
+    n_books: int = 0
+    n_available: int = 0
+    books: List[str] = Field(default_factory=list)
+    has_core: bool = False
+
+
+class ThresholdOut(BaseModel):
+    label: str
+    base_bad_rate: float
+    q1: float
+    q5: float
+    spread_pp: float
+    ratio: float
+    auc: float
+    quintiles: List[float] = Field(default_factory=list)
 
 
 class AnalysisOut(BaseModel):
@@ -98,6 +141,8 @@ class AnalysisOut(BaseModel):
     pct: Dict[str, Any] = Field(default_factory=dict)
     period: Dict[str, Any] = Field(default_factory=dict)
     books: List[BookScoreOut] = Field(default_factory=list)
+    clusters: List[ClusterScoreOut] = Field(default_factory=list)
+    history: Optional[HistoryOut] = None
     badrate: Optional[Dict[str, Any]] = None
     disclaimers: List[str] = Field(default_factory=list)
 

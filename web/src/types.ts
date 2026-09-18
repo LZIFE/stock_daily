@@ -32,6 +32,7 @@ export interface SnapshotMeta {
   core_score: Record<string, number>
   core_books: string[]
   evidence: Evidence | null
+  thresholds: Threshold[]
   disclaimers: string[]
 }
 
@@ -67,6 +68,47 @@ export interface BadRate {
   n_window: number
 }
 
+export interface HistoryPoint {
+  date: string
+  core_score: number
+  pctl: number
+  source: string
+}
+
+export interface HistoryOut {
+  points: HistoryPoint[]
+  n: number
+  min: number
+  max: number
+  delta: number
+  pctl_now: number | null
+  pctl_median: number | null
+}
+
+export interface ClusterScore {
+  cluster: string
+  label: string
+  desc: string
+  score: number | null
+  universe_median: number | null
+  diff: number | null
+  n_books: number
+  n_available: number
+  books: string[]
+  has_core: boolean
+}
+
+export interface Threshold {
+  label: string
+  base_bad_rate: number
+  q1: number
+  q5: number
+  spread_pp: number
+  ratio: number
+  auc: number
+  quintiles: number[]
+}
+
 export interface Analysis {
   code: string
   name: string
@@ -95,6 +137,8 @@ export interface Analysis {
   pct: Record<string, number | null>
   period: Record<string, string | null>
   books: BookScore[]
+  clusters: ClusterScore[]
+  history: HistoryOut | null
   badrate: BadRate | null
   disclaimers: string[]
 }

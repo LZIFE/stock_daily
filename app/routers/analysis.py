@@ -7,10 +7,37 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from .. import book_rules, disclaimers, snapshot
-from ..schemas import AnalysisOut, BookScoreOut
+from .. import book_rules, disclaimers, history as hist_mod, snapshot
+from ..schemas import AnalysisOut, BookScoreOut, ClusterScoreOut, HistoryOut
 
 router = APIRouter()
+
+
+def _clusters(rec):
+    """把 29 本归到语义簇 —— 29 个数字读不了，9 个簇能读。"""
+    stats = snapshot.cluster_stats()
+    out = []
+    for c, members in book_rules.cluster_members().items():
+        vals = [rec["books"].get(b) for b in members]
+        vals = [v for v in vals if v is not None]
+        st = stats.get(c) or {}
+        score = round(sum(vals) / len(vals), 1) if vals else None
+        med = st.get("median")
+        out.append(ClusterScoreOut(
+            cluster=c, label=book_rules.cluster_label(c),
+            desc=book_rules.cluster_desc(c),
+            score=score, universe_median=med,
+            diff=(round(score - med, 1) if score is not None and med is not None else None),
+            n_books=len(members), n_available=len(vals), books=members,
+            has_core=any(b in book_rules.CORE_BOOKS for b in members)))
+    return out
+
+
+def _history(rec, meta):
+    h = snapshot.history()
+    s = hist_mod.series(h, rec["code"],
+                        (meta.get("asof"), rec.get("core_score"), rec.get("core_pctl")))
+    return HistoryOut(**s) if s else None
 
 
 def _to_out(rec, meta):
@@ -43,7 +70,8 @@ def _to_out(rec, meta):
         position_cap_pct=rec.get("position_cap_pct"),
         tech=rec.get("tech") or {}, fin=rec.get("fin") or {},
         pct=rec.get("pct") or {}, period=rec.get("period") or {},
-        books=books, badrate=rec.get("badrate"),
+        books=books, clusters=_clusters(rec), history=_history(rec, meta),
+        badrate=rec.get("badrate"),
         disclaimers=disclaimers.for_record(rec),
     )
 

@@ -24,7 +24,7 @@ from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 from . import badrate, book_rules, config, scoring, xsec
-from .paths import CACHE_DIR, POOL_JSON, SNAPSHOT_DIR
+from .paths import CACHE_DIR, PANEL_PKL, POOL_JSON, SNAPSHOT_DIR
 
 def scan_universe():
     return sorted(p.stem for p in CACHE_DIR.glob("*.json") if not p.name.startswith("_"))
@@ -125,6 +125,18 @@ def main():
 
     for f in finals:
         f["badrate"] = badrate.lookup(bt, f["core_score"], "oos") if bt else None
+
+    # ---------- 历史轨迹（来自回测面板，不是缓存）----------
+    print(f"构建历史轨迹… ({time.time()-t0:.0f}s)", flush=True)
+    hist_n = 0
+    try:
+        from . import history as H
+        out_dir = Path(args.out) if args.out else SNAPSHOT_DIR / asof
+        out_dir.mkdir(parents=True, exist_ok=True)
+        hp, hist_n = H.write(out_dir, PANEL_PKL)
+        print(f"  已写入 {hp.name}，覆盖 {hist_n} 只 × {len(H.load(out_dir)['dates'])} 期")
+    except Exception as e:
+        print(f"  ⚠️ 历史轨迹构建失败（不阻断）: {type(e).__name__}: {e}")
 
     # ---------- 落盘 ----------
     out_dir = Path(args.out) if args.out else SNAPSHOT_DIR / asof

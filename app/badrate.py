@@ -21,6 +21,11 @@ BAD_THRESH = -0.20
 FWD_COL = 1                 # fwd[:,1] = 60 日
 OOS_START = 24
 
+# 多阈值：实测「越极端的坏结果，核心分越有效」——
+# 跌超 10% 跨度 1.86x、20% 跨度 3.26x、30% 跨度 6.13x。
+# 这个规律是这套系统最值得展示的性质，所以三个阈值都要算出来。
+THRESHOLDS = (-0.10, -0.20, -0.30)
+
 
 def auc(score, bad):
     """AUC = P(好结果的分数 > 坏结果的分数)。>0.5 表示高分确实更安全。"""
@@ -58,16 +63,17 @@ def build(panel_path=None, bad_thresh=BAD_THRESH):
     books = list(P["books"])
     idx = [books.index(b) for b in book_rules.CORE_BOOKS]
 
-    comps, bads, dates = [], [], []
+    comps, fwds, dates = [], [], []
     for di, d in enumerate(P["data"]):
         comp = d["S"][:, idx].mean(axis=1)
-        bad = d["fwd"][:, FWD_COL] < bad_thresh
-        ok = ~(np.isnan(comp) | np.isnan(d["fwd"][:, FWD_COL]))
+        fwd = d["fwd"][:, FWD_COL]
+        ok = ~(np.isnan(comp) | np.isnan(fwd))
         comps.append(comp[ok])
-        bads.append(bad[ok])
+        fwds.append(fwd[ok])
         dates.append(np.full(int(ok.sum()), di))
     comp = np.concatenate(comps)
-    bad = np.concatenate(bads)
+    fwd = np.concatenate(fwds)
+    bad = fwd < bad_thresh
     di = np.concatenate(dates)
 
     out = {"meta": {
@@ -97,6 +103,27 @@ def build(panel_path=None, bad_thresh=BAD_THRESH):
             "n": int(len(c)),
             "from": str(P["dates"][0]) if tag == "full" else str(P["dates"][OOS_START]),
             "to": str(P["dates"][-1]),
+        }
+
+    # ---- 多阈值：同一套分数在不同「坏」的定义下的表现 ----
+    # 展示重点：跨度随阈值变极端而放大（越极端的坏结果，核心分越有效）
+    out["thresholds"] = {}
+    m_oos = di >= OOS_START
+    for th in THRESHOLDS:
+        b2 = fwd < th
+        c2, bb = comp[m_oos], b2[m_oos]
+        rates, edges = _quintiles(c2, bb)
+        q1, q5 = rates[0], rates[-1]
+        out["thresholds"][f"{th:.2f}"] = {
+            "label": f"跌超 {abs(th) * 100:.0f}%",
+            "n_bad": int(bb.sum()),
+            "base_bad_rate": round(float(bb.mean()) * 100, 2),
+            "quintiles": [round(x, 2) for x in rates],
+            "quintile_edges": [round(float(e), 2) for e in edges],
+            "q1": round(q1, 2), "q5": round(q5, 2),
+            "spread_pp": round(q1 - q5, 2),
+            "ratio": round(q1 / max(q5, 1e-9), 2),
+            "auc": round(auc(c2, bb), 4),
         }
     return out
 

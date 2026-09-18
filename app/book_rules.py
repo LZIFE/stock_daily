@@ -171,3 +171,30 @@ def meta(name):
     m.setdefault("fin", [])
     m.setdefault("xsec", [])
     return m
+
+
+# 展示顺序：把与买入判定相关的簇放前面
+CLUSTER_ORDER = ["价值便宜", "低波动", "质量护城河", "周期逆向",
+                 "尾部风险", "成长", "量价情绪", "趋势动量", "流动性能力圈"]
+
+
+def cluster_members():
+    """{簇: [书...]}，按 CLUSTER_ORDER 排序。"""
+    out = {}
+    for c in CLUSTER_ORDER:
+        out[c] = [b for b in ORDER if BOOKS.get(b, {}).get("cluster") == c]
+    # 兜底：万一有书没归簇，也要露出来，不能静默丢
+    rest = [b for b in ORDER if b not in {x for v in out.values() for x in v}]
+    if rest:
+        out["未归类"] = rest
+    return {k: v for k, v in out.items() if v}
+
+
+def cluster_label(c):
+    """短名（用于列表展示）。"""
+    return c
+
+
+def cluster_desc(c):
+    """一句话说明这个簇在测什么。"""
+    return CLUSTERS.get(c, "")
