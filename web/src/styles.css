@@ -488,3 +488,51 @@ button.link:focus-visible { outline: 2px solid var(--vermil); outline-offset: 2p
     transition-duration: .01ms !important;
   }
 }
+
+/* ---------------- 榜单：标签页 ---------------- */
+.tabs {
+  display: flex; gap: 0; flex-wrap: wrap;
+  border-bottom: 1px solid var(--rule); margin-bottom: 16px;
+}
+.tab {
+  background: none; border: none; cursor: pointer;
+  font: inherit; font-size: 13px; color: var(--ink-3);
+  padding: 7px 13px 8px; border-bottom: 2px solid transparent;
+  margin-bottom: -1px; transition: color .15s var(--ease-out);
+}
+.tab:hover { color: var(--ink-2); }
+.tab.on { color: var(--ink); border-bottom-color: var(--vermil); }
+.tab:focus-visible { outline: 2px solid var(--vermil); outline-offset: -2px; }
+
+/* 榜单行可点 */
+.sec-body tbody tr[title] { transition: background .12s var(--ease-out); }
+.sec-body tbody tr[title]:hover { background: var(--paper-2); }
+
+/* ---------------- 决策日志：录入表单 ---------------- */
+.jform { display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch; }
+.jform input {
+  font: inherit; font-size: 13.5px; color: var(--ink);
+  background: transparent; border: none;
+  border-bottom: 1px solid var(--rule); padding: 7px 2px;
+  outline: none; transition: border-color .15s var(--ease-out);
+}
+.jform input:nth-of-type(1) { width: 190px; }
+.jform input:nth-of-type(2) { flex: 1; min-width: 200px; }
+.jform input::placeholder { color: var(--ink-3); font-size: 13px; }
+.jform input:focus { border-bottom-color: var(--vermil); }
+
+.btn {
+  font: inherit; font-size: 13px; cursor: pointer;
+  background: transparent; color: var(--vermil);
+  border: 1px solid var(--vermil); padding: 7px 16px;
+  transition: background .15s var(--ease-out), color .15s var(--ease-out);
+}
+.btn:hover:not(:disabled) { background: var(--vermil); color: var(--paper); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn:focus-visible { outline: 2px solid var(--vermil); outline-offset: 2px; }
+
+@media (max-width: 700px) {
+  .jform input:nth-of-type(1) { width: 100%; }
+  .tabs { gap: 2px; }
+  .tab { padding: 6px 9px 7px; font-size: 12.5px; }
+}

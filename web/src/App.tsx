@@ -12,6 +12,8 @@ import BooksPanel from './components/BooksPanel'
 import AIPanel from './components/AIPanel'
 import EventsPanel from './components/EventsPanel'
 import Disclaimers from './components/Disclaimers'
+import Screening from './components/Screening'
+import Journal from './components/Journal'
 
 function initialCode(): string {
   return new URLSearchParams(location.search).get('code') || ''
@@ -204,12 +206,36 @@ python -m uvicorn app.main:app --port 8000`}
         </>
       )}
 
+      {/* 未选股票 → 落地页：先看全市场，再看自己的记录 */}
       {!a && !loadingA && !aErr && (
-        <div className="small">
-          {meta
-            ? <>共 {meta.n_scored} 只可算股票。判定分布：{Object.entries(meta.band_distribution || {}).map(([k, v]) => `${k} ${v}`).join(' / ')}。</>
-            : '加载中…'}
-        </div>
+        <>
+          <Section n="01" title="全市场扫描" {...FACT}
+            tagSub="事实层 · 确定性排序"
+            lede="4888 只的分数都在快照里。先在这里挑出要深读的，再点进去看逐本观点。">
+            <Screening onPick={setCode} />
+          </Section>
+
+          <Section n="02" title="决策日志" {...FACT}
+            tagSub="按系统自己的承诺复盘"
+            lede="记下你在什么时候、因为什么记了哪只股票。之后系统会自动按它自己的承诺复盘 —— 而不是按收益率。">
+            <Journal onPick={setCode} />
+          </Section>
+
+          {meta && (
+            <div className="small" style={{ marginTop: 8 }}>
+              共 {meta.n_scored} 只可算股票。判定分布：
+              {Object.entries(meta.band_distribution || {}).map(([k, v]) => `${k} ${v}`).join(' / ')}。
+            </div>
+          )}
+        </>
+      )}
+
+      {/* 选了股票 → 分析末尾也放日志，方便当场记录 */}
+      {a && (
+        <Section n="10" title="决策日志" {...FACT}
+          tagSub="按系统自己的承诺复盘">
+          <Journal onPick={setCode} initialCode={a.code} />
+        </Section>
       )}
     </div>
   )

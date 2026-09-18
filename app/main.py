@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import __version__, snapshot
-from .routers import analysis, basic, events, interpretation
+from .routers import analysis, basic, events, interpretation, journal, screen
 
 app = FastAPI(
     title="29 本书观点 · 个股买入决策",
@@ -45,6 +45,8 @@ app.include_router(basic.router, prefix="/api")
 app.include_router(analysis.router, prefix="/api")
 app.include_router(events.router, prefix="/api")
 app.include_router(interpretation.router, prefix="/api")
+app.include_router(screen.router, prefix="/api")
+app.include_router(journal.router, prefix="/api")
 
 
 @app.get("/api/ping")

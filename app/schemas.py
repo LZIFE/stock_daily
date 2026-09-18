@@ -181,3 +181,88 @@ class ResearchReportListOut(BaseModel):
 class ErrorOut(BaseModel):
     error: str
     hint: Optional[str] = None
+
+
+# ---------------------------------------------------------------- 全市场榜单
+class ScreenRow(BaseModel):
+    code: str
+    name: str = ""
+    price: Optional[float] = None
+    change_pct: Optional[float] = None
+    band: Optional[str] = None
+    core_score: Optional[float] = None
+    core_pctl: Optional[float] = None
+    n_tied: Optional[int] = None
+    consensus_score: Optional[float] = None
+    divergence: Optional[float] = None
+    delta3: Optional[float] = None
+    sort_value: Optional[float] = None
+    badrate: Optional[Dict[str, Any]] = None
+    flags: List[str] = Field(default_factory=list)
+    soft_demote: List[str] = Field(default_factory=list)
+    core_imputed_books: List[str] = Field(default_factory=list)
+    pe_available: bool = True
+    loss_maker: bool = False
+    industries: List[str] = Field(default_factory=list)
+
+
+class ScreenMetaOut(BaseModel):
+    kind: str
+    title: str
+    lede: str
+    n_universe: int = 0
+    n_returned: int = 0
+    industry_coverage_note: Optional[str] = None
+    # 并列极多，必须说明榜内顺序是怎么来的，否则用户会把「第一名」当真
+    tiebreak_note: Optional[str] = None
+    tiebreak_key: Optional[str] = None
+
+
+class ScreenOut(BaseModel):
+    meta: ScreenMetaOut
+    rows: List[ScreenRow] = Field(default_factory=list)
+    disclaimer: str = ""
+
+
+class ScreenKindOut(BaseModel):
+    kind: str
+    title: str
+    lede: str
+
+
+# ---------------------------------------------------------------- 决策日志
+class JournalAddIn(BaseModel):
+    code: str
+    note: str = ""
+
+
+class JournalEntryOut(BaseModel):
+    id: str
+    code: str
+    name: str = ""
+    created_at: str
+    date: str
+    note: str = ""
+    price_at_entry: Optional[float] = None
+    band_at_entry: Optional[str] = None
+    core_score_at_entry: Optional[float] = None
+    core_pctl_at_entry: Optional[float] = None
+    consensus_at_entry: Optional[float] = None
+    divergence_at_entry: Optional[float] = None
+    expected_bad_rate: Optional[float] = None
+    base_bad_rate: Optional[float] = None
+    soft_demote: List[str] = Field(default_factory=list)
+    flags: List[str] = Field(default_factory=list)
+    core_imputed_books: List[str] = Field(default_factory=list)
+    asof: Optional[str] = None
+    verify: Dict[str, Any] = Field(default_factory=dict)
+    band_now: Optional[str] = None
+    core_score_now: Optional[float] = None
+    core_pctl_now: Optional[float] = None
+    band_changed: bool = False
+    band_imputed_note: Optional[str] = None
+
+
+class JournalOut(BaseModel):
+    entries: List[JournalEntryOut] = Field(default_factory=list)
+    summary: Dict[str, Any] = Field(default_factory=dict)

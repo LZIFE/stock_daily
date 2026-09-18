@@ -42,3 +42,19 @@ export const api = {
     req<{ edges: number[]; counts: number[]; core_min: number; core_median: number; core_max: number }>(
       `/universe/histogram?bins=${bins}`),
 }
+
+export const screenApi = {
+  kinds: () => req<import('./types').ScreenKind[]>('/screen/kinds'),
+  screen: (kind: string, limit = 30) =>
+    req<import('./types').ScreenOut>(`/screen?kind=${kind}&limit=${limit}`),
+}
+
+export const journalApi = {
+  list: () => req<import('./types').JournalOut>('/journal'),
+  add: (code: string, note = '') =>
+    req<import('./types').JournalEntry>('/journal', {
+      method: 'POST', body: JSON.stringify({ code, note }),
+    }),
+  remove: (id: string) =>
+    req<{ ok: boolean }>(`/journal/${id}`, { method: 'DELETE' }),
+}

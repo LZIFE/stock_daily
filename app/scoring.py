@@ -124,12 +124,18 @@ def core_coverage(t, f, amount=None, pct=None):
     return round((len(need) - len(missing)) / len(need) * 100, 1), missing
 
 
+_RANK = {"AVOID": 0, "WATCH": 1, "BUY": 2}
+
+
 def band(core_pctl, soft_demote, hard_veto, core_cov, min_cov, buy_pctl, watch_pctl):
     """三态判定。
 
-    顺序很重要：
-      hard_veto（若有）> 覆盖率不足 > soft_demote（只降级到 WATCH，不否决）
-      > 按核心分在全市场的分位。
+    顺序：hard_veto > 覆盖率不足 > 按分位定档 > soft_demote **封顶**。
+
+    ⚠️ 曾经写成 `if soft_demote: return "WATCH"` —— 那是「至少 WATCH」，
+    会把 AVOID **提升**成 WATCH。实测后果：核心分 27.0、分位 0.0（全市场最低）
+    的股票因为「交易拥挤」被显示成 WATCH。
+    **降级必须封顶，不能抬底。** 语义上「估值极端 / 拥挤」只会降低吸引力。
 
     注意：**没有绝对分数阈值**。v1 的 75/60 是拍脑袋定的，
     分档只能靠全市场分位标定（config 的 buy_pctl=90 / watch_pctl=70）。
@@ -138,13 +144,11 @@ def band(core_pctl, soft_demote, hard_veto, core_cov, min_cov, buy_pctl, watch_p
         return "EXCLUDED"
     if core_cov < min_cov:
         return "NO_DATA"
-    if soft_demote:
-        return "WATCH"
-    if core_pctl >= buy_pctl:
-        return "BUY"
-    if core_pctl >= watch_pctl:
-        return "WATCH"
-    return "AVOID"
+
+    base = "BUY" if core_pctl >= buy_pctl else ("WATCH" if core_pctl >= watch_pctl else "AVOID")
+    if soft_demote and _RANK[base] > _RANK["WATCH"]:
+        return "WATCH"           # 只封顶，不抬底
+    return base
 
 
 def availability(books, t, f, amount=None, pct=None):

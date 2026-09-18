@@ -180,3 +180,101 @@ export interface Interpretation {
   sources: { kind: string; title: string; date: string; org?: string }[]
   disclaimers: string[]
 }
+
+// ---------------------------------------------------------------- 全市场榜单
+export interface ScreenRow {
+  code: string
+  name: string
+  price: number | null
+  change_pct: number | null
+  band: string | null
+  core_score: number | null
+  core_pctl: number | null
+  n_tied: number | null
+  consensus_score: number | null
+  divergence: number | null
+  delta3: number | null
+  sort_value: number | null
+  badrate: BadRate | null
+  flags: string[]
+  soft_demote: string[]
+  core_imputed_books: string[]
+  pe_available: boolean
+  loss_maker: boolean
+  industries: string[]
+}
+
+export interface ScreenMeta {
+  kind: string
+  title: string
+  lede: string
+  n_universe: number
+  n_returned: number
+  industry_coverage_note: string | null
+  tiebreak_note: string | null
+  tiebreak_key: string | null
+}
+
+export interface ScreenOut {
+  meta: ScreenMeta
+  rows: ScreenRow[]
+  disclaimer: string
+}
+
+export interface ScreenKind { kind: string; title: string; lede: string }
+
+// ---------------------------------------------------------------- 决策日志
+export interface JournalVerify {
+  status: string
+  progress?: number
+  n_observed?: number
+  horizon_days?: number
+  base_price?: number
+  base_date?: string
+  max_drawdown_pct?: number
+  return_pct?: number
+  last_date?: string
+  hit_bad?: boolean
+  hit_date?: string | null
+  note?: string
+}
+
+export interface JournalEntry {
+  id: string
+  code: string
+  name: string
+  created_at: string
+  date: string
+  note: string
+  price_at_entry: number | null
+  band_at_entry: string | null
+  core_score_at_entry: number | null
+  core_pctl_at_entry: number | null
+  consensus_at_entry: number | null
+  divergence_at_entry: number | null
+  expected_bad_rate: number | null
+  base_bad_rate: number | null
+  soft_demote: string[]
+  flags: string[]
+  core_imputed_books: string[]
+  asof: string | null
+  verify: JournalVerify
+  band_now: string | null
+  core_score_now: number | null
+  core_pctl_now: number | null
+  band_changed: boolean
+}
+
+export interface JournalSummary {
+  n_total: number
+  n_observed: number
+  n_pending: number
+  observed_bad_rate: number | null
+  expected_bad_rate_mean: number | null
+  base_bad_rate: number | null
+  horizon_days: number
+  bad_threshold_pct: number
+  note: string
+}
+
+export interface JournalOut { entries: JournalEntry[]; summary: JournalSummary }
