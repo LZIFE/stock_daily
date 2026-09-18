@@ -29,9 +29,9 @@ CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "config", "score_wei
 # 核心分 4 本书各自需要的字段（用于计算覆盖率与数据缺口）
 CORE_FIELDS = {
     "coulling": ["pe_now", "pb", "amt_pct", "debt", "quality_bad"],
-    "candlestick": ["yang5"],
-    "buffett": ["ocf_ttm", "np_ttm", "roe", "pe_now", "debt"],
     "shefrin": ["amp60"],
+    "graham": ["pe_now", "pb"],
+    "dalio": ["volat", "vol_pct", "ma60", "close", "debt"],
 }
 
 
@@ -64,7 +64,7 @@ def _coverage(r, ctx):
         need.update(flds)
     missing = []
     for f in sorted(need):
-        v = ctx.get(f) if f == "amt_pct" else r.get(f)
+        v = ctx.get(f, r.get(f))          # amt_pct / vol_pct 在 ctx，其余在 r
         if v is None:
             missing.append(f)
     cov = (len(need) - len(missing)) / len(need) * 100
@@ -160,12 +160,15 @@ def evaluate_pool(rows, ctx=None):
     amts = sorted([r["amt20"] for r in ok if r.get("amt20") is not None])
     pes = sorted([r["pe_now"] for r in ok
                   if r.get("pe_now") is not None and r["pe_now"] > 0])
+    vols = sorted([r["volat"] for r in ok if r.get("volat") is not None])
 
     out = []
     for r in ok:
         c = dict(ctx)
         c["amt_pct"] = _pctl(amts, r.get("amt20"))
+        c["vol_pct"] = _pctl(vols, r.get("volat"))
         r["amt_pctl"] = c["amt_pct"]
+        r["vol_pctl"] = c["vol_pct"]
         r["pe_pctl"] = _pctl(pes, r.get("pe_now") if (r.get("pe_now") or 0) > 0 else None)
 
         scores = P.score_all(r, c)

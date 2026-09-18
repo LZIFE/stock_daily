@@ -10,7 +10,7 @@ from . import wyckoff, edwards_magee, head_first, chanlun
 from . import damodaran, graham, tangchao, fisher
 from . import howard_marks, livermore, kahneman, munger
 from . import coulling, dow, candlestick, malkiel
-from . import buffett, shefrin
+from . import buffett, shefrin, dalio
 
 REGISTRY = {
     # 量价组
@@ -31,11 +31,14 @@ REGISTRY = {
     # 兼容/制衡
     "dow": dow.score,
     "malkiel": malkiel.score,
-    # v2 核心分（依据作者级边际贡献证据，见 SCORING_V2.md）
-    "coulling": coulling.score,
+    # v2 核心分（依据分类目标上的 greedy 选书，见 SCORING_V2.md）
+    "coulling": coulling.score,       # 邱国鹭 · 便宜且不拥挤
+    "shefrin": shefrin.score,         # 舍夫林 · 低波动偏好
+    "graham": graham.score,           # 格雷厄姆 · 安全边际（已对齐回测口径）
+    "dalio": dalio.score,             # 达利欧 · 风险平价
+    # 已实现但未进核心分（保留供共识分与后续验证）
     "candlestick": candlestick.score,
     "buffett": buffett.score,
-    "shefrin": shefrin.score,
 }
 
 LABELS = {
@@ -57,6 +60,7 @@ LABELS = {
     "candlestick": "蜡烛图·K线形态",
     "buffett": "巴菲特·现金利润质量",
     "shefrin": "舍夫林·低波动偏好",
+    "dalio": "达利欧·风险平价",
 }
 
 # v2 共识分只用「真实实现」的模块；恒返回常数的模块计入会向中位稀释
