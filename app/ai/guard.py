@@ -27,24 +27,31 @@ LLM_TIMEOUT_SEC = 120
 def repair_json(raw):
     """三层修复，返回 (obj|None, how)。
 
-    实测失败模式与对策：
+    四种实测失败模式与对策：
       1. ``` 围栏（模型无视「不要代码块」的明确指令）→ 去围栏
       2. 字符串内含原始换行/制表符 → 逐字符转义控制字符
       3. 字符串内含裸英文双引号 → 替换为中文「」
-    截断（找不到闭合括号）**不做猜测性补全** —— 宁可降级，不要编出半截结论。
+      4. **结尾多输出一个 `}`**（实测茅台样本 `...]}}`）→ 用 raw_decode
+         从第一个 `{` 开始解析并**忽略尾部多余内容**，而不是用 rfind('}') 取最后一个
+         （那会取到多余的括号，报 "Extra data"）
+
+    截断（JSON 不完整）**不做猜测性补全** —— 宁可降级，不要编出半截结论。
+    raw_decode 在截断时会抛异常，正好落到降级分支。
     """
     s = (raw or "").strip()
     if s.startswith("```"):
         s = re.sub(r"^```[a-zA-Z]*\s*", "", s)
         s = re.sub(r"```\s*$", "", s)
-    i, j = s.find("{"), s.rfind("}")
-    if i < 0 or j <= i:
+    i = s.find("{")
+    if i < 0:
         return None, "no_json_object"
-    s = s[i:j + 1]
+    s = s[i:]
 
+    dec = json.JSONDecoder()
     for attempt in range(3):
         try:
-            return json.loads(s), ["clean", "esc_ctrl", "esc_quote"][attempt]
+            obj, _ = dec.raw_decode(s)          # 忽略尾部多余内容
+            return obj, ["clean", "esc_ctrl", "esc_quote"][attempt]
         except Exception:
             if attempt == 0:
                 s = _escape_control_chars(s)

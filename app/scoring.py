@@ -177,8 +177,16 @@ def finalize(rec, xsec, amount=None):
     # 不可用 → 分数置 None，绝不显示成 50
     shown = {k: (v if avail.get(k) else None) for k, v in books.items()}
 
+    # 核心分**必须**用含兜底值的原始分数算 —— 回测验证的就是这个版本
+    # （bt_scorer 在输入缺失时回退 50，回测面板里也是这样）。
+    # 改成「只按可用的书求均值」会破坏 parity，等于丢掉整套证据链。
+    #
+    # 但兜底不能藏着：把这些书单独列出来，UI 必须说明
+    # 「核心分里有 N/4 本依赖兜底值」。
     core = sum(books[b] for b in CORE_BOOKS) / len(CORE_BOOKS)
     cons = sum(books[b] for b in CONSENSUS_BOOKS) / len(CONSENSUS_BOOKS)
+    core_imputed = [b for b in CORE_BOOKS if not avail.get(b)]
+    cons_imputed = [b for b in CONSENSUS_BOOKS if not avail.get(b)]
 
     cov, miss = coverage(t, f, amount=amt, pct=pct)
     ccov, cmiss = core_coverage(t, f, amount=amt, pct=pct)
@@ -208,5 +216,8 @@ def finalize(rec, xsec, amount=None):
         "books": shown, "book_available": avail,
         "core_score": round(core, 2), "consensus_score": round(cons, 2),
         "divergence": round(core - cons, 2),
+        "core_imputed_books": core_imputed,
+        "n_books_available": sum(1 for v in avail.values() if v),
+        "n_books_total": len(avail),
         "soft_demote": soft, "hard_veto": hard, "flags": flags,
     }

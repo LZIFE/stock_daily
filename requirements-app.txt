@@ -1,0 +1,7 @@
+# 个股买入决策系统（app/ + web/）依赖
+# 与日报链路（requirements.txt）分开，避免污染原流水线
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.6
+openai>=1.30.0        # LLM（OpenAI 兼容：DeepSeek / Agnes）；未配置时自动降级为纯规则报告
+requests>=2.28
