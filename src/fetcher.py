@@ -5,6 +5,7 @@ K线双源：新浪（主）→ 东财（备）。全部走 HTTP，绕过系统�
 """
 import csv
 import json
+import math
 import os
 import re
 import time
@@ -90,11 +91,40 @@ def calc_tech(k):
     dd60 = (h60 - c) / h60 * 100
     v5 = sum(vols[-5:]) / 5
     v20 = sum(vols[-20:]) / 20 if n >= 20 else v5
+
+    # ---- v2 评分体系新增（全部由已有 130 根日K推出，纯增量，不改动上面任何键）----
+    # 近 5 日阳线数（蜡烛图·K线）
+    yang5 = sum(1 for r in k[-5:] if r[4] > r[1])
+    # 60 日平均振幅（舍夫林·行为：低波动偏好）
+    amp60 = sum((r[2] - r[3]) / r[3] * 100 for r in k[-60:] if r[3] > 0) / max(1, min(n, 60))
+    # 20 日日均成交额（邱国鹭「不拥挤」的拥挤度代理，因无流通股本无法算真换手率）
+    amt20 = sum(r[5] * r[4] for r in k[-20:]) / max(1, min(n, 20))
+
+    def _ema(vals, span):
+        kk = 2 / (span + 1)
+        e = vals[0]
+        for v in vals[1:]:
+            e = v * kk + e * (1 - kk)
+        return e
+    dif = (_ema(closes, 12) - _ema(closes, 26)) if n >= 26 else None
+    # 60 日年化波动率（达利欧/塔勒布用）
+    if n >= 60:
+        rets = [math.log(closes[i] / closes[i - 1])
+                for i in range(-60, 0) if closes[i - 1] > 0]
+        if rets:
+            mu = sum(rets) / len(rets)
+            var = sum((x - mu) ** 2 for x in rets) / len(rets)
+            volat = (var ** 0.5) * math.sqrt(250) * 100
+        else:
+            volat = None
+    else:
+        volat = None
+
     return {
         "date": k[-1][0],
         "close": round(c, 3),
         "chg_today": round((c / closes[-2] - 1) * 100, 2),
-        "chg5": round((c / closes[-6] - 1) * 100, 2),
+        "chg5": round((c / closes[-6] - 1) * 100, 2) if n >= 6 else None,
         "ma20": round(ma20, 3) if ma20 else None,
         "ma60": round(ma60, 3) if ma60 else None,
         "vs_ma20": round((c / ma20 - 1) * 100, 1) if ma20 else None,
@@ -102,6 +132,12 @@ def calc_tech(k):
         "pos60": round(pos60, 1),
         "dd60": round(dd60, 1),
         "vol_ratio": round(v5 / v20, 2) if v20 else 1.0,
+        # v2 新增字段
+        "yang5": yang5,
+        "amp60": round(amp60, 2),
+        "amt20": round(amt20, 1),
+        "dif": round(dif, 4) if dif is not None else None,
+        "volat": round(volat, 1) if volat is not None else None,
     }
 
 

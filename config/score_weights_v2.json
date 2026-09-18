@@ -1,0 +1,113 @@
+{
+  "version": "v2.0",
+  "_comment": "买入决策评分体系 v2 | 门禁(绝对) + 核心分(4本) + 共识分 + 分歧度 + 仓位层 | 依据: 作者思想有效性与稳健权重_报告.md",
+  "_doc": "SCORING_V2.md",
+
+  "coverage": {
+    "min_coverage_pct": 40,
+    "_comment": "低于此值不出分, 判定为 NO_DATA。40 是「当前数据源只有技术面完整」的过渡值; 补齐 pb/debt/ocf_ttm 后应提到 60。"
+  },
+
+  "core_score": {
+    "_comment": "4 本有独立增量信息的书。权重 = |mc60|、|mc250| 的正值均值归一化, 单书上限 40%。",
+    "_basis": "mc = 边际贡献(完整组合减掉它之后样本外表现的变化)。不用 oos 独立超额——那答的是「单独用是否有用」, 对体系设计是错的指标。",
+    "perspectives": {
+      "coulling": 40.0,
+      "candlestick": 24.7,
+      "buffett": 18.0,
+      "shefrin": 17.3
+    },
+    "evidence": {
+      "coulling": "mc60 +1.506 / mc250 +1.266 — 唯一两周期均 >1; 三状态全正; 回撤最小",
+      "candlestick": "mc60 +0.529 / mc250 +0.476 — 两周期均 >0.4",
+      "buffett": "mc60 +0.737 / mc250 -0.006 — 单周期成立",
+      "shefrin": "mc60 +0.640 / mc250 +0.061 — 单周期成立, Neutral 最强"
+    }
+  },
+
+  "consensus_score": {
+    "_comment": "共识分 = 已实现视角的等权平均, 用于「其他作者怎么看」与内容生产, 不进入买入决策。",
+    "method": "equal_weight",
+    "exclude": ["malkiel"],
+    "_exclude_reason": "malkiel 恒返回 50(制衡由引擎处理), 计入会向中位稀释",
+    "_note": "回测里的 29 书等权(EW29_raw)是唯一有正面证据的基线, 但生产只实现了 18 个视角, 故两者不等价。"
+  },
+
+  "divergence": {
+    "_comment": "分歧度 = 核心分 - 共识分。绝对值大 = 4 本有独立信息的书与多数视角打架, 值得深挖。",
+    "flag_threshold": 20
+  },
+
+  "veto_rules": {
+    "liquidity_floor": {
+      "action": "exclude",
+      "rule": "20日均成交额 < 5000万",
+      "field": "amt20",
+      "available": true
+    },
+    "financial_unreliable": {
+      "action": "exclude",
+      "rule": "连续2年归母净利为负 或 连续3年经营现金流为负",
+      "available": false,
+      "_gap": "股票池只有单期 np_yoy, 没有年报序列。需补财务源。",
+      "_removed_legacy": "原实现的 np_yoy < -50 直接否决已删除——单季净利同比会系统性错杀周期底部(化工/航运/猪周期), 与马克斯·周期/逆向逻辑自相矛盾。"
+    },
+    "valuation_extreme": {
+      "action": "demote",
+      "rule": "PE 处于全市场 95 分位以上",
+      "field": "pe_pctl",
+      "available": true,
+      "_gap": "设计原意是行业相对(PE > 行业中位数×3), 但无行业映射, 暂用全市场分位。"
+    },
+    "crowding": {
+      "action": "demote",
+      "rule": "成交额处于全市场 90 分位以上",
+      "field": "amt_pctl",
+      "available": true,
+      "_note": "邱国鹭的规则是「便宜且不拥挤」, v1 只实现了「便宜」。"
+    },
+    "hwm_drawdown": {
+      "action": "freeze_buys",
+      "rule": "账户 HWM 回撤 > 20%",
+      "available": true,
+      "_note": "行为纪律, 不是收益优化——期望上是负收益的。"
+    }
+  },
+
+  "bands": {
+    "_comment": "阈值由核心分在全市场的分位标定, 不写死绝对分数(v1 的 75/60 无依据)。",
+    "buy_pctl": 90,
+    "watch_pctl": 70
+  },
+
+  "position_layer": {
+    "regime": {
+      "_comment": "月频 regime(HS300-MA120 + 市场宽度)。不用单日涨跌幅——单日是噪声。",
+      "state_attack": 100,
+      "state_neutral": 70,
+      "state_protect": 50,
+      "state_defend": 30,
+      "_caveat": "报告 §7.3 已证伪 0.75/1.0/1.25 的开关映射; 此处映射同样未经验证, 仅作仓位上限, 不当择时信号。"
+    },
+    "vol_target": {
+      "_comment": "单股上限 = min(regime上限, 目标波动/个股60日年化波动)",
+      "target_vol_pct": 25,
+      "max_single_pct": 15,
+      "min_single_pct": 3
+    },
+    "hwm_multiplier": {
+      "under_5pct": 1.0,
+      "5_to_10pct": 0.9,
+      "10_to_20pct": 0.7,
+      "over_20pct": 0.0
+    }
+  },
+
+  "validation_status": {
+    "_comment": "未通过以下验证前, v2 只是假设。",
+    "mc20": "未做 — exc20 是唯一有统计功效的口径(30折近独立, CI 宽 1.67 vs exc250 的 5.28), 但 mc 只算了 60/250 日。",
+    "greedy_selection": "未做 — 当前 4 本是手挑的, 同样受 winner's curse 影响。",
+    "gate_precision": "未做 — 最重要。评价指标应从「Top30平均超额」改为「门禁精确率/召回率」: 定义坏结果 = 未来60日绝对收益 < -20%, 测门禁能否筛掉。",
+    "transaction_cost": "未做 — 月度换手约100%, 双边成本 0.2~0.3%/月, 与全部效应量级同阶。"
+  }
+}
