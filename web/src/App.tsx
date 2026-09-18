@@ -13,6 +13,18 @@ function initialCode(): string {
   return new URLSearchParams(location.search).get('code') || ''
 }
 
+/**
+ * 数据基准日距今天数。
+ * 刻意做分级告警：这套分数会随快照老化而失效，而界面上每个数字看起来都一样「新鲜」，
+ * 不提醒的话用户很容易拿三个月前的判定当今天的用。
+ */
+function daysSince(d?: string | null): number | null {
+  if (!d) return null
+  const t = new Date(d + 'T00:00:00').getTime()
+  if (Number.isNaN(t)) return null
+  return Math.floor((Date.now() - t) / 86400000)
+}
+
 export default function App() {
   const [health, setHealth] = useState<HealthOut | null>(null)
   const [meta, setMeta] = useState<SnapshotMeta | null>(null)
@@ -56,6 +68,8 @@ export default function App() {
       .finally(() => setAiLoading(false))
   }, [code])
 
+  const stale = daysSince(health?.asof)
+
   // ---------- 快照未就绪 ----------
   if (bootErr) {
     return (
@@ -97,9 +111,26 @@ python -m uvicorn app.main:app --port 8000`}
       <h1>29 本书观点 · 个股买入决策</h1>
       <div className="sub">
         输入 A 股代码，看 29 本投资书对这只股票的逐本观点，以及一个由确定性规则给出的判定。
-        {health?.asof && <> 数据基准日 <strong>{health.asof}</strong>（离线快照，非实时）。</>}
         {health && <> AI {health.ai_available ? `可用（${health.ai_model}）` : '不可用，将退化为纯规则报告'}。</>}
       </div>
+
+      {stale !== null && (
+        <div className={`stale ${stale > 30 ? 'bad' : stale > 7 ? 'warn' : ''}`}>
+          <div>
+            数据基准日 <strong>{health?.asof}</strong>，距今 <strong>{stale}</strong> 天
+            {stale > 30
+              ? ' — 已严重过期，分数与判定不应再用于实盘参考'
+              : stale > 7
+                ? ' — 建议重建快照'
+                : ' — 离线快照，非实时行情'}
+          </div>
+          {stale > 7 && (
+            <div className="howto">
+              刷新：<code>python -m app.build_snapshot</code>（全市场约 2.5 分钟）
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="legend">
         <span><i style={{ borderTopColor: 'var(--fact)', borderTopStyle: 'solid' }} />事实层 · 已回测验证</span>
