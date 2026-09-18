@@ -71,16 +71,33 @@ def _coverage(r, ctx):
     return round(cov, 1), missing
 
 
+def pl_cap_ceiling(cfg):
+    """流动性受限时的仓位上限（百分数，与 position_cap_pct 同单位）。
+
+    约束体现在仓位，不体现在判定。
+    """
+    return (cfg.get("executability", {})
+               .get("liquidity_floor", {})
+               .get("cap_pct", 5.0))
+
+
 def _gates(r, cfg, ctx):
-    """L0 门禁：返回 (否决, 降级, 冻结, 原因列表)"""
-    hard, soft, freeze, why = [], [], [], []
+    """L0 门禁：返回 (否决, 降级, 冻结, 可执行性标注, 原因列表)
+
+    ⚠️ 流动性门已从「否决」降级为「标注」。依据 gate 实证（2020-03..2026-07，
+    321786 股票-月）：低流动性组的未来 60 日坏结果率 7.3%，反而低于通过组的
+    13.2%，lift 0.63，95% 区间 [0.48, 0.80] —— 显著反向，三状态一致。
+    可执行性是约束，不是「会不会亏钱」的预测器。
+    """
+    hard, soft, freeze, flags, why = [], [], [], [], []
     rules = cfg["veto_rules"]
 
-    # 流动性（否决）
+    # 流动性（标注，不参与判定）
     floor = 5e7
     if r.get("amt20") is not None and r["amt20"] < floor:
-        hard.append("流动性不足")
-        why.append(f"20日均成交额 {r['amt20']/1e4:.0f}万 < {floor/1e4:.0f}万")
+        flags.append("流动性受限")
+        why.append(f"20日均成交额 {r['amt20']/1e4:.0f}万 < {floor/1e4:.0f}万"
+                   f"（仅影响可建仓位，不影响判定）")
 
     # 财务可信（否决）—— 数据源缺年报序列，规则未实现
     if not rules["financial_unreliable"].get("available"):
@@ -102,7 +119,7 @@ def _gates(r, cfg, ctx):
         freeze.append("HWM 回撤冻结")
         why.append(f"账户 HWM 回撤 {dd:.1f}% 冻结买入")
 
-    return hard, soft, freeze, why
+    return hard, soft, freeze, flags, why
 
 
 def _position_cap(r, cfg, ctx):
@@ -160,8 +177,11 @@ def evaluate_pool(rows, ctx=None):
         cons = sum(scores.get(m, 50.0) for m in mods) / len(mods)
 
         cov, missing = _coverage(r, c)
-        hard, soft, freeze, why = _gates(r, cfg, c)
+        hard, soft, freeze, flags, why = _gates(r, cfg, c)
         cap, cap_reason = _position_cap(r, cfg, c)
+        # 流动性受限时压低仓位上限（约束体现在仓位，不体现在判定）
+        if "流动性受限" in flags:
+            cap = round(min(cap, pl_cap_ceiling(cfg)), 2)
 
         out.append({
             "code": r.get("code"), "name": r.get("name"), "close": r.get("close"),
@@ -169,6 +189,7 @@ def evaluate_pool(rows, ctx=None):
             "div": round(core - cons, 1),
             "coverage": cov, "missing_fields": missing,
             "hard_veto": hard, "soft_demote": soft, "freeze": freeze,
+            "flags": flags,
             "reasons": why, "position_cap_pct": cap, "position_reason": cap_reason,
             "components": {k: round(v, 1) for k, v in scores.items()},
         })
