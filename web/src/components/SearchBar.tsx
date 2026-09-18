@@ -2,6 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { api } from '../api'
 import type { SearchItem } from '../types'
 
+const BAND_COLOR: Record<string, string> = {
+  BUY: 'var(--buy)',
+  WATCH: 'var(--watch)',
+  AVOID: 'var(--ink-3)',
+  NO_DATA: 'var(--ink-3)',
+  EXCLUDED: 'var(--ink-3)',
+}
+
 export default function SearchBar({ onPick }: { onPick: (code: string) => void }) {
   const [q, setQ] = useState('')
   const [items, setItems] = useState<SearchItem[]>([])
@@ -24,13 +32,12 @@ export default function SearchBar({ onPick }: { onPick: (code: string) => void }
     return () => document.removeEventListener('mousedown', h)
   }, [])
 
-  const bandOf = (b: string | null) => b || ''
-
   return (
     <div className="search" ref={box}>
       <input
         value={q}
         placeholder="输入股票代码或名称，例如 600519 / 茅台"
+        aria-label="搜索股票"
         onChange={e => setQ(e.target.value)}
         onFocus={() => items.length && setOpen(true)}
         onKeyDown={e => {
@@ -43,8 +50,9 @@ export default function SearchBar({ onPick }: { onPick: (code: string) => void }
             <div key={i.code} onClick={() => { onPick(i.code); setOpen(false); setQ('') }}>
               <span className="c">{i.code}</span>
               <span>{i.name}</span>
-              <span style={{ marginLeft: 'auto' }} className={`chip ${bandOf(i.band) === 'AVOID' ? '' : 'warn'}`}>
-                {i.band} · {i.core_score ?? '—'}
+              <span style={{ marginLeft: 'auto' }} className="small">
+                <span style={{ color: BAND_COLOR[i.band || ''] || 'var(--ink-3)' }}>{i.band}</span>
+                {' · '}{i.core_score ?? '—'}
               </span>
             </div>
           ))}
