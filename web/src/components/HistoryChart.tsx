@@ -18,13 +18,18 @@ export default function HistoryChart({ h }: { h: HistoryOut }) {
 
   const W = 900, H = 120, PL = 6, PR = 6, PT = 12, PB = 16
   const xs = (i: number) => PL + (i / (pts.length - 1)) * (W - PL - PR)
-  const lo = Math.min(h.min, 30), hi = Math.max(h.max, 80)
-  const pad = Math.max((hi - lo) * 0.14, 3)
+  // y 轴**必须贴合数据实际区间**。之前写成 Math.min(h.min, 30)/Math.max(h.max, 80)，
+  // 结果茅台（49.8~61.8）被压成一条平线，图完全没信息量。
+  const lo = h.min, hi = h.max
+  const pad = Math.max((hi - lo) * 0.18, 1.5)
   const y0 = lo - pad, y1 = hi + pad
   const ys = (v: number) => PT + (1 - (v - y0) / (y1 - y0)) * (H - PT - PB)
 
   const line = pts.map((p, i) => `${i ? 'L' : 'M'}${xs(i).toFixed(1)},${ys(p.core_score).toFixed(1)}`).join(' ')
   const area = `${line} L${xs(pts.length - 1).toFixed(1)},${H - PB} L${xs(0).toFixed(1)},${H - PB} Z`
+
+  const sorted = pts.map(p => p.core_score).slice().sort((x, y) => x - y)
+  const medScore = sorted[Math.floor(sorted.length / 2)]
 
   const bandOf = (p: number) => (p >= 90 ? 'BUY' : p >= 70 ? 'WATCH' : 'AVOID')
   const color = (b: string) =>
@@ -49,6 +54,16 @@ export default function HistoryChart({ h }: { h: HistoryOut }) {
         </defs>
 
         <path className="ar" d={area} />
+        {/* 历史中位参考线：一眼看出「现在高于还是低于自己的常态」 */}
+        <line
+          className="bandline"
+          x1={PL} x2={W - PR}
+          y1={ys(medScore)} y2={ys(medScore)}
+          vectorEffect="non-scaling-stroke"
+        />
+        <text className="bandtxt" x={W - PR} y={ys(medScore) - 4} textAnchor="end">
+          历史中位 {medScore}
+        </text>
         <path className="ln" d={line} vectorEffect="non-scaling-stroke" />
 
         {/* 每个点按当期 band 着色；点数多时只画后段 */}
